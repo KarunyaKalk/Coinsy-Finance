@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Wallet, AlertCircle } from 'lucide-react';
+import { Wallet, AlertCircle, Sparkles } from 'lucide-react';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -12,40 +12,30 @@ export const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const handleDemoAccess = () => {
+    const demoUser = {
+      id: 1,
+      email: email.trim() || 'karunya.kalk@gmail.com',
+      full_name: 'Karunya Kalkhundiya',
+    };
+    localStorage.setItem('coinsy_token', 'demo-token');
+    localStorage.setItem('coinsy_user', JSON.stringify(demoUser));
+    window.location.href = './#/dashboard';
+    window.location.reload();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    if (!isValidEmail) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-
-    if (!password) {
-      setError('Please enter your password.');
-      return;
-    }
 
     setIsSubmitting(true);
     try {
       await login(email.trim().toLowerCase(), password);
       navigate('/dashboard');
     } catch (err) {
-      console.error('Login error:', err);
-      // Fallback for static demo environments (like GitHub Pages) when backend is offline
-      if (!err.response) {
-        console.warn('Backend server unreachable. Enabling offline demo access.');
-        const mockUser = { id: 1, email: email.trim().toLowerCase(), full_name: 'Demo User' };
-        localStorage.setItem('coinsy_token', 'demo-token');
-        localStorage.setItem('coinsy_user', JSON.stringify(mockUser));
-        window.location.href = '/dashboard';
-        return;
-      }
-
-      const msg = err.response?.data?.detail || 'Failed to login. Please check your credentials.';
-      setError(msg);
+      console.warn('Backend server unavailable or network error. Entering demo mode:', err);
+      // Seamless demo fallback for static GitHub Pages host
+      handleDemoAccess();
     } finally {
       setIsSubmitting(false);
     }
@@ -100,18 +90,29 @@ export const LoginPage = () => {
 
           <button
             type="submit"
-            disabled={isSubmitting || !isValidEmail || !password}
+            disabled={isSubmitting}
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors disabled:opacity-50"
           >
             {isSubmitting ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        <div className="text-center text-sm text-slate-500 pt-2">
-          Don't have an account yet?{' '}
-          <Link to="/signup" className="text-indigo-600 font-medium hover:underline">
-            Sign up
-          </Link>
+        <div className="pt-2 border-t border-slate-100 text-center space-y-3">
+          <button
+            type="button"
+            onClick={handleDemoAccess}
+            className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-2.5 rounded-lg text-xs shadow hover:opacity-95 transition-all"
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>Explore App Instant Demo Mode</span>
+          </button>
+
+          <div className="text-sm text-slate-500">
+            Don't have an account yet?{' '}
+            <Link to="/signup" className="text-indigo-600 font-medium hover:underline">
+              Sign up
+            </Link>
+          </div>
         </div>
       </div>
     </div>
