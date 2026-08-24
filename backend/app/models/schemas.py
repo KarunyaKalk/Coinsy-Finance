@@ -230,5 +230,82 @@ class MoneyRecapResponse(BaseModel):
     money_mood_emoji: str
 
 
+# Module 7: Interview Prep & Job Application Schemas
+class JobApplicationBase(BaseModel):
+    company_name: str
+    job_title: str
+    job_description: str
+    status: str = Field(default="Applied", description="Applied | Interview | Offered | Rejected")
+    location: Optional[str] = None
+    salary_range: Optional[str] = None
+
+class JobApplicationCreate(JobApplicationBase):
+    user_id: Optional[int] = None
+
+class JobApplicationUpdate(BaseModel):
+    company_name: Optional[str] = None
+    job_title: Optional[str] = None
+    job_description: Optional[str] = None
+    status: Optional[str] = None
+    location: Optional[str] = None
+    salary_range: Optional[str] = None
+
+class JobApplicationResponse(JobApplicationBase):
+    id: int
+    user_id: int
+    created_at: datetime
+    has_prep_pack: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
+
+class UserResumeBase(BaseModel):
+    title: str = "Default Resume"
+    content: str
+
+class UserResumeCreate(UserResumeBase):
+    user_id: Optional[int] = None
+
+class UserResumeResponse(UserResumeBase):
+    id: int
+    user_id: int
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class PrepPackItemResponse(BaseModel):
+    id: int
+    prep_pack_id: int
+    item_type: str  # technical | behavioral | star_answer | company_notes
+    title: str
+    question: str
+    star_situation: Optional[str] = None
+    star_task: Optional[str] = None
+    star_action: Optional[str] = None
+    star_result: Optional[str] = None
+    user_notes: Optional[str] = None
+    is_completed: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
+
+class PrepPackItemUpdate(BaseModel):
+    user_notes: Optional[str] = None
+    is_completed: Optional[bool] = None
+
+class InterviewPrepPackResponse(BaseModel):
+    id: int
+    job_id: int
+    user_id: int
+    company_context: Optional[str] = None
+    resume_overlap_analysis: Optional[str] = None
+    is_generated_by_llm: bool = False
+    created_at: datetime
+    items: List[PrepPackItemResponse] = []
+    completed_count: int = 0
+    total_count: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+
 
 

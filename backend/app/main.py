@@ -8,6 +8,9 @@ from app.api.analytics import router as analytics_router
 from app.api.insights import router as insights_router
 from app.api.auth import router as auth_router
 from app.api.budgets import router as budgets_router
+from app.api.personality import router as personality_router
+from app.api.jobs import router as jobs_router
+from app.api.interview_prep import router as interview_prep_router
 from app.core.scheduler import scheduler
 
 from contextlib import asynccontextmanager
@@ -45,6 +48,8 @@ app.include_router(statements_router, prefix="/api/v1")
 app.include_router(analytics_router, prefix="/api/v1")
 app.include_router(insights_router, prefix="/api/v1")
 app.include_router(personality_router, prefix="/api/v1")
+app.include_router(jobs_router, prefix="/api/v1")
+app.include_router(interview_prep_router, prefix="/api/v1")
 
 
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import CoinsyWidget from './CoinsyWidget';
-import { LayoutDashboard, Target, FileUp, Settings, LogOut, Wallet } from 'lucide-react';
+import { LayoutDashboard, Target, Briefcase, FileUp, Settings, LogOut, Wallet } from 'lucide-react';
 
 export const Layout = ({ children }) => {
   const { user, logout } = useAuth();
@@ -17,6 +17,7 @@ export const Layout = ({ children }) => {
   const navItems = [
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Budgets & Goals', path: '/budgets', icon: Target },
+    { label: 'Interview Prep', path: '/jobs', icon: Briefcase },
     { label: 'Import', path: '/import', icon: FileUp },
     { label: 'Settings', path: '/settings', icon: Settings },
   ];

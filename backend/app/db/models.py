@@ -116,3 +116,64 @@ class CategoryCorrection(Base):
     # Relationships
     user = relationship("User", back_populates="corrections")
 
+
+# Module 7: Interview Prep & Application Tracker Models
+class UserResume(Base):
+    __tablename__ = "user_resumes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String, nullable=False, default="Default Resume")
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class JobApplication(Base):
+    __tablename__ = "job_applications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    company_name = Column(String, nullable=False)
+    job_title = Column(String, nullable=False)
+    job_description = Column(Text, nullable=False)
+    status = Column(String, nullable=False, default="Applied")  # Applied | Interview | Offered | Rejected
+    location = Column(String, nullable=True)
+    salary_range = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    prep_packs = relationship("InterviewPrepPack", back_populates="job", cascade="all, delete-orphan")
+
+
+class InterviewPrepPack(Base):
+    __tablename__ = "interview_prep_packs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    job_id = Column(Integer, ForeignKey("job_applications.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    company_context = Column(Text, nullable=True)
+    resume_overlap_analysis = Column(Text, nullable=True)
+    is_generated_by_llm = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    job = relationship("JobApplication", back_populates="prep_packs")
+    items = relationship("PrepPackItem", back_populates="prep_pack", cascade="all, delete-orphan")
+
+
+class PrepPackItem(Base):
+    __tablename__ = "prep_pack_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    prep_pack_id = Column(Integer, ForeignKey("interview_prep_packs.id", ondelete="CASCADE"), nullable=False)
+    item_type = Column(String, nullable=False)  # technical | behavioral | star_answer | company_notes
+    title = Column(String, nullable=False)
+    question = Column(Text, nullable=False)
+    star_situation = Column(Text, nullable=True)
+    star_task = Column(Text, nullable=True)
+    star_action = Column(Text, nullable=True)
+    star_result = Column(Text, nullable=True)
+    user_notes = Column(Text, nullable=True)
+    is_completed = Column(Boolean, default=False)
+
+    prep_pack = relationship("InterviewPrepPack", back_populates="items")
+
+

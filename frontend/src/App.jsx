@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import DashboardPage from './pages/DashboardPage';
 import BudgetsPage from './pages/BudgetsPage';
+import JobTrackerPage from './pages/JobTrackerPage';
 import ImportPage from './pages/ImportPage';
 import SettingsPage from './pages/SettingsPage';
 
@@ -36,6 +37,16 @@ export function App() {
               <ProtectedRoute>
                 <Layout>
                   <BudgetsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/jobs"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <JobTrackerPage />
                 </Layout>
               </ProtectedRoute>
             }
