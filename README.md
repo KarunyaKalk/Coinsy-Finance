@@ -13,21 +13,24 @@ Coinsy Finance/
 ├── backend/
 │   ├── alembic/              # Database migration scripts
 │   ├── app/
-│   │   ├── api/              # FastAPI endpoints (categories, transactions, statements)
-│   │   ├── core/             # Configuration & environment settings
+│   │   ├── api/              # FastAPI routers (auth, analytics, budgets, categories, insights, personality, statements, transactions)
+│   │   ├── core/             # Application configuration, security, JWT auth, and background scheduler
 │   │   ├── db/               # SQLAlchemy models & database session engine
 │   │   ├── models/           # Pydantic request & response validation schemas
-│   │   ├── services/         # Business logic, CSV/PDF statement parsers, LLM categorizer
-│   │   └── main.py           # FastAPI application entrypoint
+│   │   ├── services/         # Business logic, CSV/PDF parsers, LLM categorizer, analytics, insights, and personality service
+│   │   └── main.py           # FastAPI application entrypoint with lifespan background job scheduler
 │   ├── tests/                # Pytest unit & integration test suites
 │   ├── requirements.txt      # Python dependencies
 │   └── alembic.ini
 ├── frontend/
 │   ├── src/
-│   │   ├── components/       # UI components & dashboard views
-│   │   ├── App.jsx           # Main React component
-│   │   └── index.css         # Tailwind base styles & theme tokens
-│   ├── tailwind.config.js    # Custom Coinsy theme color configuration
+│   │   ├── api/              # Axios API client layer with Bearer token interceptors
+│   │   ├── components/       # UI components, layout, guarded routes, Recharts charts, heatmap, and Coinsy widget
+│   │   ├── context/          # React AuthContext for JWT state management
+│   │   ├── pages/            # Application views (LoginPage, SignupPage, DashboardPage, BudgetsPage, ImportPage, SettingsPage)
+│   │   ├── App.jsx           # Main React App with React Router routing
+│   │   └── index.css         # Tailwind base styles and directives
+│   ├── tailwind.config.js
 │   ├── package.json
 │   └── vite.config.js
 └── README.md
@@ -47,16 +50,48 @@ Coinsy Finance/
 ### 2. LLM Auto-Categorization & Few-Shot Learning
 - **Batched Processing**: Groups transactions into batched prompts for the Anthropic Claude API to minimize token usage and latency.
 - **Fixed Category Taxonomy**: Categorizes transactions into 9 default categories: Food, Transport, Rent, Utilities, Shopping, Entertainment, Subscriptions, Investments, and Other.
-- **User Preference Learning**: Stores explicit category corrections made by users and includes up to 5 recent corrections as few-shot prompt examples.
-- **Heuristic Fallback**: Includes a rule-based categorization fallback when an API key is omitted.
+- **User Preference Learning**: Stores explicit category corrections made by users and includes recent corrections as few-shot prompt examples.
+- **Heuristic Fallback**: Includes a rule-based categorization fallback when an API key is omitted or an external API call fails.
+
+### 3. Pandas Spend Analytics & Period Comparisons
+- **Timeframe Aggregations**: Grouping and resample calculations for weekly (ISO week format), monthly, and yearly spend by category using Pandas.
+- **Month-over-Month & Week-over-Week Comparisons**: Category-level and total spend comparison metrics, computing change amounts, percentage changes, and trend directions (increased, decreased, unchanged, new).
+- **Natural Language Period Summaries**: LLM-generated executive summaries of notable spend shifts across periods, with rule-based fallback generation.
+
+### 4. Trend Predictions & Background Batch Scheduler
+- **Spend Forecasting**: Linear trend regression models fitted over 3 to 6 months of historical spend to forecast next month's spend per category.
+- **One-Line LLM Explanation**: Concise natural language driver explanations accompanying predictions.
+- **Asynchronous Scheduler**: Asynchronous background thread scheduler that pre-computes predictions and tips off the main HTTP request loop and persists insights to the database for instant response delivery.
+
+### 5. Monthly Budget Goals & Threshold Alerts
+- **Category Caps**: User-defined monthly spending limits per category.
+- **Threshold Evaluation**: Real-time progress tracking evaluating 80% near-limit warning thresholds and 100% over-budget exceeded thresholds.
+- **Stored Notification Triggers**: Automatic generation of stored notification records (`CoinsyMessage`) with mascot mood reactions (`concerned`, `happy`, `celebrating`).
+
+### 6. Interactive Visualizations & Analytics
+- **Recharts Components**: Donut charts for category distribution, grouped bar charts for period comparisons, and line charts for historical spend trends.
+- **Timeframe View Toggles**: Header control switching queries dynamically between Weekly, Monthly, and Yearly aggregation views.
+- **Daily Spend Intensity Heatmap**: 90-day calendar intensity grid displaying daily spend levels from 0 to 4 with interactive tooltips.
+- **Cash Flow Analytics**: Multi-period Income vs. Expense vs. Net Savings charts and average savings rate calculation.
+
+### 7. Personality Layer & Spotify-Wrapped Style Recap
+- **Budget Streak Counter**: Tracks consecutive days spent within daily budget allowances.
+- **Money Mood Engine**: Calculates financial mood (Thriving, Calm, or Stressed) derived from budget status and savings rate.
+- **Roast Mode Toggle**: User setting that transforms LLM tip generation into witty, lighthearted financial roasts based on actual spending habits.
+- **Shareable Monthly Money Recap**: Month-end Spotify-Wrapped style recap card featuring spending personas (such as The Foodie Adventurer, The Trendsetter, or The Wealth Architect), top merchant metrics, biggest single purchase, and financial recap stories.
+
+### 8. Authentication & Client Infrastructure
+- **JWT Authentication**: Password hashing using direct bcrypt and JWT token issuance via PyJWT on the backend.
+- **Auth Context & Route Guards**: React context managing token lifecycle and ProtectedRoute wrappers guarding private pages.
+- **Centralized API Client**: Axios wrapper with automatic Bearer token injection and 401 unauthorized response interceptors.
 
 ---
 
 ## Technology Stack
 
-- **Backend**: Python 3.9+, FastAPI, SQLAlchemy 2.0, Alembic, SQLite, Pandas, pdfplumber, Anthropic Python SDK, Pytest
-- **Frontend**: React 18, Vite, Tailwind CSS v3, Recharts, Framer Motion, Lucide React
-- **Authentication**: JWT authentication groundwork
+- **Backend**: Python 3.9+, FastAPI, SQLAlchemy 2.0, Alembic, SQLite, Pandas, PyJWT, bcrypt, pdfplumber, Anthropic Python SDK, Pytest
+- **Frontend**: React 18, Vite, Tailwind CSS v4, Recharts, Axios, React Router v6, Lucide React
+- **Authentication**: JWT Bearer Token Authentication
 
 ---
 
@@ -120,6 +155,11 @@ PYTHONPATH=. pytest tests
    npm run dev
    ```
    The frontend application will be available at `http://localhost:5173`.
+
+4. Build for production:
+   ```bash
+   npm run build
+   ```
 
 ---
 

@@ -1,21 +1,73 @@
 import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Layout from './components/Layout';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import DashboardPage from './pages/DashboardPage';
+import BudgetsPage from './pages/BudgetsPage';
+import ImportPage from './pages/ImportPage';
+import SettingsPage from './pages/SettingsPage';
 
-export default function App() {
+export function App() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6">
-      <div className="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center shadow-xl space-y-4">
-        <div className="w-16 h-16 bg-gradient-to-tr from-amber-500 to-yellow-300 rounded-full mx-auto flex items-center justify-center text-3xl font-extrabold text-slate-950 shadow-lg shadow-amber-500/20">
-          ₹
-        </div>
-        <h1 className="text-3xl font-bold text-slate-100 tracking-tight">Coinsy Finance</h1>
-        <p className="text-slate-400 text-sm">
-          LLM-powered personal finance tracker with your friendly financial mascot.
-        </p>
-        <div className="pt-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-500">
-          <span>Backend: FastAPI + SQLite</span>
-          <span>Frontend: React + Vite</span>
-        </div>
-      </div>
-    </div>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+
+          {/* Protected App Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <DashboardPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/budgets"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <BudgetsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/import"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <ImportPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SettingsPage />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Redirect root to dashboard */}
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
+
+export default App;
