@@ -11,6 +11,8 @@ from app.api.budgets import router as budgets_router
 from app.api.personality import router as personality_router
 from app.api.jobs import router as jobs_router
 from app.api.interview_prep import router as interview_prep_router
+from app.api.settings_api import router as settings_api_router
+from app.api.audit import router as audit_router
 from app.core.scheduler import scheduler
 
 from contextlib import asynccontextmanager
@@ -50,6 +52,9 @@ app.include_router(insights_router, prefix="/api/v1")
 app.include_router(personality_router, prefix="/api/v1")
 app.include_router(jobs_router, prefix="/api/v1")
 app.include_router(interview_prep_router, prefix="/api/v1")
+app.include_router(settings_api_router, prefix="/api/v1")
+app.include_router(audit_router, prefix="/api/v1")
+
 
 
 

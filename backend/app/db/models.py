@@ -177,3 +177,34 @@ class PrepPackItem(Base):
     prep_pack = relationship("InterviewPrepPack", back_populates="items")
 
 
+# Module 8: Settings, Platform Management & Audit Log Models
+class UserSettings(Base):
+    __tablename__ = "user_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True)
+    scan_frequency = Column(String, nullable=False, default="6h")  # 1h | 6h | 12h | 24h
+    ats_threshold = Column(Float, nullable=False, default=75.0)
+    daily_app_cap = Column(Integer, nullable=False, default=15)
+    daily_email_cap = Column(Integer, nullable=False, default=5)
+    active_platforms_json = Column(Text, nullable=True)  # JSON e.g. {"linkedin": true, "indeed": true}
+    platform_credentials_json = Column(Text, nullable=True)  # JSON e.g. platform credentials
+    telegram_webhook_url = Column(String, nullable=True)
+    email_notification_address = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    action_type = Column(String, nullable=False)  # scrape_run | resume_generation | ats_score | application_submission | email_sent | captcha_blocked
+    status = Column(String, nullable=False, default="success")  # success | warning | failed | blocked
+    platform = Column(String, nullable=True)
+    title = Column(String, nullable=False)
+    details = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+

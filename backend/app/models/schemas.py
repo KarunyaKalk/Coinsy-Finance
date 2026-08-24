@@ -1,5 +1,5 @@
 from datetime import datetime, date
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 # User Schemas
@@ -304,6 +304,57 @@ class InterviewPrepPackResponse(BaseModel):
     total_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# Module 8: Central Settings & Audit Log Schemas
+class UserSettingsBase(BaseModel):
+    scan_frequency: str = "6h"
+    ats_threshold: float = 75.0
+    daily_app_cap: int = 15
+    daily_email_cap: int = 5
+    active_platforms: Dict[str, bool] = Field(
+        default_factory=lambda: {
+            "linkedin": True,
+            "indeed": True,
+            "glassdoor": False,
+            "wellfound": True,
+            "ziprecruiter": False
+        }
+    )
+    platform_credentials: Dict[str, str] = Field(default_factory=dict)
+    telegram_webhook_url: Optional[str] = None
+    email_notification_address: Optional[str] = None
+
+class UserSettingsUpdate(BaseModel):
+    scan_frequency: Optional[str] = None
+    ats_threshold: Optional[float] = None
+    daily_app_cap: Optional[int] = None
+    daily_email_cap: Optional[int] = None
+    active_platforms: Optional[Dict[str, bool]] = None
+    platform_credentials: Optional[Dict[str, str]] = None
+    telegram_webhook_url: Optional[str] = None
+    email_notification_address: Optional[str] = None
+
+class UserSettingsResponse(UserSettingsBase):
+    user_id: int
+    updated_at: datetime
+
+class AuditLogResponse(BaseModel):
+    id: int
+    user_id: int
+    action_type: str
+    status: str
+    platform: Optional[str] = None
+    title: str
+    details: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class BlockAlertTriggerRequest(BaseModel):
+    platform: str = "LinkedIn"
+    error_message: str = "CAPTCHA challenge detected on login page"
+
 
 
 

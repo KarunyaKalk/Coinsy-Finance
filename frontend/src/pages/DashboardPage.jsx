@@ -4,6 +4,7 @@ import { analyticsApi, insightsApi, transactionsApi } from '../api/client';
 import CategoryDonutChart from '../components/charts/CategoryDonutChart';
 import ComparisonBarChart from '../components/charts/ComparisonBarChart';
 import TrendLineChart from '../components/charts/TrendLineChart';
+import AuditFeed from '../components/AuditFeed';
 import { TrendingUp, Lightbulb, Sparkles, Calendar, DollarSign, ArrowUpRight, ArrowDownRight, PieChartIcon, BarChart2, LineChartIcon } from 'lucide-react';
 
 export const DashboardPage = () => {
@@ -226,6 +227,9 @@ export const DashboardPage = () => {
         </div>
         <TrendLineChart periods={spendData?.periods || []} />
       </div>
+
+      {/* Module 8 Component: Transparent Agent Audit Activity Feed */}
+      <AuditFeed />
 
       {/* Category Comparison Table & Natural Language Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

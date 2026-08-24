@@ -197,6 +197,32 @@ export const interviewPrepApi = {
   },
 };
 
+export const settingsApi = {
+  getSettings: async (userId) => {
+    const params = { user_id: userId };
+    const res = await apiClient.get('/settings', { params });
+    return res.data;
+  },
+  updateSettings: async (userId, settingsData) => {
+    const params = { user_id: userId };
+    const res = await apiClient.put('/settings', settingsData, { params });
+    return res.data;
+  },
+};
+
+export const auditApi = {
+  getAuditLogs: async (userId, actionType = 'all', statusFilter = 'all', limit = 50) => {
+    const params = { user_id: userId, action_type: actionType, status_filter: statusFilter, limit };
+    const res = await apiClient.get('/audit', { params });
+    return res.data;
+  },
+  triggerBlockAlert: async (userId, platform, errorMessage) => {
+    const params = { user_id: userId };
+    const res = await apiClient.post('/audit/trigger-block-alert', { platform, error_message: errorMessage }, { params });
+    return res.data;
+  },
+};
+
 export const transactionsApi = {
   listTransactions: async (params = {}) => {
     const res = await apiClient.get('/transactions', { params });
