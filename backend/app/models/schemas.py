@@ -1,14 +1,39 @@
 from datetime import datetime, date
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+import re
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 
 # User Schemas
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
 
+    @field_validator('email')
+    def validate_email_format(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Email address is required.')
+        email_str = v.strip().lower()
+        if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email_str):
+            raise ValueError('Please enter a valid email address.')
+        return email_str
+
 class UserCreate(UserBase):
     password: str
+
+    @field_validator('password')
+    def validate_password_strength(cls, v):
+        if not v or len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long.')
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('Password must contain at least one uppercase letter.')
+        if not re.search(r'[a-z]', v):
+            raise ValueError('Password must contain at least one lowercase letter.')
+        if not re.search(r'[0-9]', v):
+            raise ValueError('Password must contain at least one number.')
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]]', v):
+            raise ValueError('Password must contain at least one special character (e.g. !@#$%^&*).')
+        return v
+
 
 class UserResponse(UserBase):
     id: int
