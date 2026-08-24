@@ -13,11 +13,11 @@ Coinsy Finance/
 ├── backend/
 │   ├── alembic/              # Database migration scripts
 │   ├── app/
-│   │   ├── api/              # FastAPI routers (auth, analytics, budgets, categories, insights, personality, statements, transactions)
+│   │   ├── api/              # FastAPI routers (auth, analytics, audit, budgets, categories, insights, interview_prep, jobs, personality, settings, statements, transactions)
 │   │   ├── core/             # Application configuration, security, JWT auth, and background scheduler
 │   │   ├── db/               # SQLAlchemy models & database session engine
 │   │   ├── models/           # Pydantic request & response validation schemas
-│   │   ├── services/         # Business logic, CSV/PDF parsers, LLM categorizer, analytics, insights, and personality service
+│   │   ├── services/         # Business logic, CSV/PDF parsers, LLM categorizer, analytics, insights, interview prep, settings, and audit service
 │   │   └── main.py           # FastAPI application entrypoint with lifespan background job scheduler
 │   ├── tests/                # Pytest unit & integration test suites
 │   ├── requirements.txt      # Python dependencies
@@ -25,9 +25,9 @@ Coinsy Finance/
 ├── frontend/
 │   ├── src/
 │   │   ├── api/              # Axios API client layer with Bearer token interceptors
-│   │   ├── components/       # UI components, layout, guarded routes, Recharts charts, heatmap, and Coinsy widget
+│   │   ├── components/       # UI components, layout, guarded routes, Recharts charts, heatmap, AuditFeed, PrepPackChecklist, and Coinsy widget
 │   │   ├── context/          # React AuthContext for JWT state management
-│   │   ├── pages/            # Application views (LoginPage, SignupPage, DashboardPage, BudgetsPage, ImportPage, SettingsPage)
+│   │   ├── pages/            # Application views (LoginPage, SignupPage, DashboardPage, BudgetsPage, JobTrackerPage, ImportPage, SettingsPage)
 │   │   ├── App.jsx           # Main React App with React Router routing
 │   │   └── index.css         # Tailwind base styles and directives
 │   ├── tailwind.config.js
@@ -80,10 +80,21 @@ Coinsy Finance/
 - **Roast Mode Toggle**: User setting that transforms LLM tip generation into witty, lighthearted financial roasts based on actual spending habits.
 - **Shareable Monthly Money Recap**: Month-end Spotify-Wrapped style recap card featuring spending personas (such as The Foodie Adventurer, The Trendsetter, or The Wealth Architect), top merchant metrics, biggest single purchase, and financial recap stories.
 
-### 8. Authentication & Client Infrastructure
-- **JWT Authentication**: Password hashing using direct bcrypt and JWT token issuance via PyJWT on the backend.
-- **Auth Context & Route Guards**: React context managing token lifecycle and ProtectedRoute wrappers guarding private pages.
-- **Centralized API Client**: Axios wrapper with automatic Bearer token injection and 401 unauthorized response interceptors.
+### 8. Interview Prep Pack Generator & Job Application Tracker
+- **Job Tracker**: Track job applications with statuses (Applied, Interview, Offered, Rejected).
+- **Automated Prep Pack Action**: Action trigger enabled on any job marked with Interview status.
+- **Claude AI Prep Pack Generation**: Generates technical and behavioral questions based on Job Description (JD) and candidate resume overlap and gaps, company background context, and STAR-format draft answers mapped to actual resume bullets.
+- **Checkable Prep Pack UI**: Interactive prep checklist with category filters (Technical, Behavioral, STAR Answers, Company Notes), progress bars, and editable custom notes fields per item.
+
+### 9. Central Settings, Audit Log & Graceful Failure Handling
+- **Central Settings UI**: Configuration controls for scan frequency (1 hour to 24 hours), ATS score match threshold slider, daily application cap, and daily cold-email cap.
+- **Platform Management**: Active and inactive toggles with credentials management for platforms (LinkedIn, Indeed, Glassdoor, Wellfound, ZipRecruiter).
+- **Notification Webhooks**: Configurable Telegram bot webhook URL and alert email notification address.
+- **Filterable Audit Log Activity Feed**: Transparent activity trail logging all scrape runs, resume generations, ATS score evaluations, application submissions, cold emails, and block events.
+- **Graceful CAPTCHA and Block Failure Handling**: Automatic halting of automation upon hitting CAPTCHAs or platform blocks without aggressive retries, generating in-app mascot notifications and webhook alert dispatches.
+
+### 10. App-Wide UI Polish Pass
+- **Consistent Visual Hierarchy**: Refined loading states, empty state placeholders with icons, responsive grid layouts, card hover micro-animations, and status badges across all pages (Dashboard, Budgets, Job Tracker, Import, and Settings).
 
 ---
 
