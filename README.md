@@ -10,6 +10,8 @@ The project is structured as a monorepo with distinct backend and frontend servi
 
 ```
 Coinsy Finance/
+├── .github/
+│   └── workflows/            # GitHub Actions CI/CD deployment pipelines
 ├── backend/
 │   ├── alembic/              # Database migration scripts
 │   ├── app/
@@ -93,8 +95,14 @@ Coinsy Finance/
 - **Filterable Audit Log Activity Feed**: Transparent activity trail logging all scrape runs, resume generations, ATS score evaluations, application submissions, cold emails, and block events.
 - **Graceful CAPTCHA and Block Failure Handling**: Automatic halting of automation upon hitting CAPTCHAs or platform blocks without aggressive retries, generating in-app mascot notifications and webhook alert dispatches.
 
-### 10. App-Wide UI Polish Pass
-- **Consistent Visual Hierarchy**: Refined loading states, empty state placeholders with icons, responsive grid layouts, card hover micro-animations, and status badges across all pages (Dashboard, Budgets, Job Tracker, Import, and Settings).
+### 10. Authentication Constraints & Security Rules
+- **Email Validation**: Enforces standard format validation, trimming, and lowercase normalization.
+- **Password Strength Rules**: Enforces password requirements (minimum 8 characters, at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character).
+- **Interactive UI Feedback**: Real-time password requirement checklist displaying security criteria on the authentication forms.
+
+### 11. Instant Demo Mode & Automated CI/CD Deployment
+- **GitHub Actions Pipeline**: Automated deployment workflow compiling the Vite React application and deploying static build artifacts to GitHub Pages.
+- **Offline Demo Mode**: Integrated instant demo access allowing users to explore the live interactive dashboard and feature components directly on static web hosts.
 
 ---
 
@@ -102,7 +110,7 @@ Coinsy Finance/
 
 - **Backend**: Python 3.9+, FastAPI, SQLAlchemy 2.0, Alembic, SQLite, Pandas, PyJWT, bcrypt, pdfplumber, Anthropic Python SDK, Pytest
 - **Frontend**: React 18, Vite, Tailwind CSS v4, Recharts, Axios, React Router v6, Lucide React
-- **Authentication**: JWT Bearer Token Authentication
+- **Deployment & CI/CD**: GitHub Actions, GitHub Pages
 
 ---
 
