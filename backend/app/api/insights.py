@@ -1,18 +1,24 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Request
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.core.rate_limiter import verify_llm_rate_limit
 from app.models.schemas import (
     PredictionResponse,
     DailyTipResponse,
     BatchJobResponse,
+    AskCoinsyRequest,
+    AskCoinsyResponse,
 )
 from app.services.insights_service import (
     get_latest_prediction,
     get_latest_daily_tip,
     run_batch_insights_job,
+    ask_coinsy_companion,
 )
+
+
 
 router = APIRouter(prefix="/insights", tags=["Insights & Predictions"])
 
@@ -70,3 +76,28 @@ def trigger_batch_insights_job(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error running batch insights job: {str(e)}"
         )
+
+
+@router.post("/ask", response_model=AskCoinsyResponse, dependencies=[Depends(verify_llm_rate_limit)])
+def ask_coinsy_endpoint(
+    req: AskCoinsyRequest,
+    db: Session = Depends(get_db)
+):
+
+    """
+    Interactive companion chat endpoint for Ask Coinsy feature.
+    Prompts Claude LLM with companion mascot system prompt and financial context.
+    """
+    try:
+        return ask_coinsy_companion(
+            db=db,
+            user_id=req.user_id,
+            user_message=req.message,
+            roast_mode=req.roast_mode
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error chatting with Coinsy: {str(e)}"
+        )
+

@@ -80,13 +80,6 @@ export const analyticsApi = {
     const res = await apiClient.get('/analytics/cashflow', { params });
     return res.data;
   },
-  getRecap: async (userId, month = null, year = null) => {
-    const params = { user_id: userId };
-    if (month) params.month = month;
-    if (year) params.year = year;
-    const res = await apiClient.get('/analytics/recap', { params });
-    return res.data;
-  },
 };
 
 export const insightsApi = {
@@ -98,19 +91,6 @@ export const insightsApi = {
   getDailyTip: async (userId, forceRefresh = false) => {
     const params = { user_id: userId, force_refresh: forceRefresh };
     const res = await apiClient.get('/insights/daily-tip', { params });
-    return res.data;
-  },
-};
-
-export const personalityApi = {
-  getPersonality: async (userId, roastMode = false) => {
-    const params = { user_id: userId, roast_mode: roastMode };
-    const res = await apiClient.get('/personality', { params });
-    return res.data;
-  },
-  getTip: async (userId, roastMode = false) => {
-    const params = { user_id: userId, roast_mode: roastMode };
-    const res = await apiClient.get('/personality/tip', { params });
     return res.data;
   },
 };
@@ -136,89 +116,6 @@ export const budgetsApi = {
   getCoinsyWidget: async (userId) => {
     const params = { user_id: userId };
     const res = await apiClient.get('/budgets/coinsy-widget', { params });
-    return res.data;
-  },
-};
-
-export const jobsApi = {
-  listJobs: async (userId, statusFilter = null) => {
-    const params = { user_id: userId };
-    if (statusFilter) params.status_filter = statusFilter;
-    const res = await apiClient.get('/jobs', { params });
-    return res.data;
-  },
-  createJob: async (userId, jobData) => {
-    const params = { user_id: userId };
-    const res = await apiClient.post('/jobs', jobData, { params });
-    return res.data;
-  },
-  getJob: async (userId, jobId) => {
-    const params = { user_id: userId };
-    const res = await apiClient.get(`/jobs/${jobId}`, { params });
-    return res.data;
-  },
-  updateJob: async (userId, jobId, jobData) => {
-    const params = { user_id: userId };
-    const res = await apiClient.put(`/jobs/${jobId}`, jobData, { params });
-    return res.data;
-  },
-  deleteJob: async (userId, jobId) => {
-    const params = { user_id: userId };
-    const res = await apiClient.delete(`/jobs/${jobId}`, { params });
-    return res.data;
-  },
-};
-
-export const interviewPrepApi = {
-  generatePrepPack: async (userId, jobId) => {
-    const params = { user_id: userId };
-    const res = await apiClient.post(`/interview-prep/generate/${jobId}`, {}, { params });
-    return res.data;
-  },
-  getPrepPack: async (userId, jobId) => {
-    const params = { user_id: userId };
-    const res = await apiClient.get(`/interview-prep/${jobId}`, { params });
-    return res.data;
-  },
-  updateItem: async (userId, itemId, updateData) => {
-    const params = { user_id: userId };
-    const res = await apiClient.patch(`/interview-prep/items/${itemId}`, updateData, { params });
-    return res.data;
-  },
-  getResume: async (userId) => {
-    const params = { user_id: userId };
-    const res = await apiClient.get('/interview-prep/resume/me', { params });
-    return res.data;
-  },
-  saveResume: async (userId, resumeData) => {
-    const params = { user_id: userId };
-    const res = await apiClient.post('/interview-prep/resume/me', resumeData, { params });
-    return res.data;
-  },
-};
-
-export const settingsApi = {
-  getSettings: async (userId) => {
-    const params = { user_id: userId };
-    const res = await apiClient.get('/settings', { params });
-    return res.data;
-  },
-  updateSettings: async (userId, settingsData) => {
-    const params = { user_id: userId };
-    const res = await apiClient.put('/settings', settingsData, { params });
-    return res.data;
-  },
-};
-
-export const auditApi = {
-  getAuditLogs: async (userId, actionType = 'all', statusFilter = 'all', limit = 50) => {
-    const params = { user_id: userId, action_type: actionType, status_filter: statusFilter, limit };
-    const res = await apiClient.get('/audit', { params });
-    return res.data;
-  },
-  triggerBlockAlert: async (userId, platform, errorMessage) => {
-    const params = { user_id: userId };
-    const res = await apiClient.post('/audit/trigger-block-alert', { platform, error_message: errorMessage }, { params });
     return res.data;
   },
 };

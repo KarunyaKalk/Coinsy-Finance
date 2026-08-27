@@ -1,7 +1,7 @@
 def test_signup_user(client):
     payload = {
         "email": "newuser@coinsy.app",
-        "password": "SecurePassword123!",
+        "password": "securepassword123",
         "full_name": "New Coinsy User"
     }
     response = client.post("/api/v1/auth/signup", json=payload)
@@ -16,7 +16,7 @@ def test_signup_user(client):
 def test_signup_duplicate_email(client):
     payload = {
         "email": "dupe@coinsy.app",
-        "password": "SecurePassword123!",
+        "password": "password123",
         "full_name": "User One"
     }
     res1 = client.post("/api/v1/auth/signup", json=payload)
@@ -30,14 +30,14 @@ def test_signup_duplicate_email(client):
 def test_login_user_success(client):
     signup_payload = {
         "email": "loginuser@coinsy.app",
-        "password": "SecurePassword123!",
+        "password": "mypassword123",
         "full_name": "Login User"
     }
     client.post("/api/v1/auth/signup", json=signup_payload)
 
     login_payload = {
         "email": "loginuser@coinsy.app",
-        "password": "SecurePassword123!"
+        "password": "mypassword123"
     }
     response = client.post("/api/v1/auth/login", json=login_payload)
     assert response.status_code == 200
@@ -49,7 +49,7 @@ def test_login_user_success(client):
 def test_login_user_invalid_credentials(client):
     login_payload = {
         "email": "nonexistent@coinsy.app",
-        "password": "WrongPassword123!"
+        "password": "wrongpassword"
     }
     response = client.post("/api/v1/auth/login", json=login_payload)
     assert response.status_code == 401
@@ -58,7 +58,7 @@ def test_login_user_invalid_credentials(client):
 def test_get_me_endpoint(client):
     signup_payload = {
         "email": "meuser@coinsy.app",
-        "password": "SecurePassword123!",
+        "password": "mypassword123",
         "full_name": "Me User"
     }
     signup_res = client.post("/api/v1/auth/signup", json=signup_payload)

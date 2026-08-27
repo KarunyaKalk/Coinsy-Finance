@@ -1,39 +1,14 @@
 from datetime import datetime, date
-from typing import Optional, List, Dict, Any
-import re
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
+from typing import Optional, List
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 # User Schemas
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
 
-    @field_validator('email')
-    def validate_email_format(cls, v):
-        if not v or not v.strip():
-            raise ValueError('Email address is required.')
-        email_str = v.strip().lower()
-        if not re.match(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email_str):
-            raise ValueError('Please enter a valid email address.')
-        return email_str
-
 class UserCreate(UserBase):
     password: str
-
-    @field_validator('password')
-    def validate_password_strength(cls, v):
-        if not v or len(v) < 8:
-            raise ValueError('Password must be at least 8 characters long.')
-        if not re.search(r'[A-Z]', v):
-            raise ValueError('Password must contain at least one uppercase letter.')
-        if not re.search(r'[a-z]', v):
-            raise ValueError('Password must contain at least one lowercase letter.')
-        if not re.search(r'[0-9]', v):
-            raise ValueError('Password must contain at least one number.')
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>_\-+=\[\]]', v):
-            raise ValueError('Password must contain at least one special character (e.g. !@#$%^&*).')
-        return v
-
 
 class UserResponse(UserBase):
     id: int
@@ -255,131 +230,17 @@ class MoneyRecapResponse(BaseModel):
     money_mood_emoji: str
 
 
-# Module 7: Interview Prep & Job Application Schemas
-class JobApplicationBase(BaseModel):
-    company_name: str
-    job_title: str
-    job_description: str
-    status: str = Field(default="Applied", description="Applied | Interview | Offered | Rejected")
-    location: Optional[str] = None
-    salary_range: Optional[str] = None
-
-class JobApplicationCreate(JobApplicationBase):
-    user_id: Optional[int] = None
-
-class JobApplicationUpdate(BaseModel):
-    company_name: Optional[str] = None
-    job_title: Optional[str] = None
-    job_description: Optional[str] = None
-    status: Optional[str] = None
-    location: Optional[str] = None
-    salary_range: Optional[str] = None
-
-class JobApplicationResponse(JobApplicationBase):
-    id: int
+# Ask Coinsy Companion Schemas
+class AskCoinsyRequest(BaseModel):
+    message: str
     user_id: int
+    roast_mode: bool = False
+
+class AskCoinsyResponse(BaseModel):
+    reply: str
+    mascot_mood: str  # idle | thinking | happy | concerned | sleepy | celebrating
+    is_llm_generated: bool = True
     created_at: datetime
-    has_prep_pack: bool = False
-
-    model_config = ConfigDict(from_attributes=True)
-
-class UserResumeBase(BaseModel):
-    title: str = "Default Resume"
-    content: str
-
-class UserResumeCreate(UserResumeBase):
-    user_id: Optional[int] = None
-
-class UserResumeResponse(UserResumeBase):
-    id: int
-    user_id: int
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
-class PrepPackItemResponse(BaseModel):
-    id: int
-    prep_pack_id: int
-    item_type: str  # technical | behavioral | star_answer | company_notes
-    title: str
-    question: str
-    star_situation: Optional[str] = None
-    star_task: Optional[str] = None
-    star_action: Optional[str] = None
-    star_result: Optional[str] = None
-    user_notes: Optional[str] = None
-    is_completed: bool = False
-
-    model_config = ConfigDict(from_attributes=True)
-
-class PrepPackItemUpdate(BaseModel):
-    user_notes: Optional[str] = None
-    is_completed: Optional[bool] = None
-
-class InterviewPrepPackResponse(BaseModel):
-    id: int
-    job_id: int
-    user_id: int
-    company_context: Optional[str] = None
-    resume_overlap_analysis: Optional[str] = None
-    is_generated_by_llm: bool = False
-    created_at: datetime
-    items: List[PrepPackItemResponse] = []
-    completed_count: int = 0
-    total_count: int = 0
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-# Module 8: Central Settings & Audit Log Schemas
-class UserSettingsBase(BaseModel):
-    scan_frequency: str = "6h"
-    ats_threshold: float = 75.0
-    daily_app_cap: int = 15
-    daily_email_cap: int = 5
-    active_platforms: Dict[str, bool] = Field(
-        default_factory=lambda: {
-            "linkedin": True,
-            "indeed": True,
-            "glassdoor": False,
-            "wellfound": True,
-            "ziprecruiter": False
-        }
-    )
-    platform_credentials: Dict[str, str] = Field(default_factory=dict)
-    telegram_webhook_url: Optional[str] = None
-    email_notification_address: Optional[str] = None
-
-class UserSettingsUpdate(BaseModel):
-    scan_frequency: Optional[str] = None
-    ats_threshold: Optional[float] = None
-    daily_app_cap: Optional[int] = None
-    daily_email_cap: Optional[int] = None
-    active_platforms: Optional[Dict[str, bool]] = None
-    platform_credentials: Optional[Dict[str, str]] = None
-    telegram_webhook_url: Optional[str] = None
-    email_notification_address: Optional[str] = None
-
-class UserSettingsResponse(UserSettingsBase):
-    user_id: int
-    updated_at: datetime
-
-class AuditLogResponse(BaseModel):
-    id: int
-    user_id: int
-    action_type: str
-    status: str
-    platform: Optional[str] = None
-    title: str
-    details: Optional[str] = None
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
-class BlockAlertTriggerRequest(BaseModel):
-    platform: str = "LinkedIn"
-    error_message: str = "CAPTCHA challenge detected on login page"
-
 
 
 

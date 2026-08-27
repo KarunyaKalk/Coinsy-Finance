@@ -4,7 +4,6 @@ import { analyticsApi, insightsApi, transactionsApi } from '../api/client';
 import CategoryDonutChart from '../components/charts/CategoryDonutChart';
 import ComparisonBarChart from '../components/charts/ComparisonBarChart';
 import TrendLineChart from '../components/charts/TrendLineChart';
-import AuditFeed from '../components/AuditFeed';
 import { TrendingUp, Lightbulb, Sparkles, Calendar, DollarSign, ArrowUpRight, ArrowDownRight, PieChartIcon, BarChart2, LineChartIcon } from 'lucide-react';
 
 export const DashboardPage = () => {
@@ -18,13 +17,14 @@ export const DashboardPage = () => {
   const [tipData, setTipData] = useState(null);
   const [predictionData, setPredictionData] = useState(null);
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
 
   const compPeriod = timeframe === 'weekly' ? 'wow' : 'mom';
 
   const fetchData = async () => {
     if (!user) return;
     setLoading(true);
+    setFetchError(null);
     try {
       const [spend, comp, summary, tip, pred, txs] = await Promise.allSettled([
         analyticsApi.getSpend(timeframe, user.id),
@@ -43,6 +43,7 @@ export const DashboardPage = () => {
       if (txs.status === 'fulfilled') setTransactions(txs.value);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
+      setFetchError('Failed to load dashboard data. Please check your backend connection.');
     } finally {
       setLoading(false);
     }
@@ -52,13 +53,37 @@ export const DashboardPage = () => {
     fetchData();
   }, [user, timeframe]);
 
-  if (loading && !spendData) {
+  if (fetchError) {
     return (
-      <div className="flex items-center justify-center h-64 text-slate-500 text-sm font-medium">
-        Loading interactive financial dashboard...
+      <div className="bg-rose-50 border border-rose-200 rounded-xl p-6 text-center space-y-3">
+        <p className="text-sm font-semibold text-rose-700">{fetchError}</p>
+        <button
+          onClick={fetchData}
+          className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs rounded-lg transition-colors"
+        >
+          Retry Loading Dashboard
+        </button>
       </div>
     );
   }
+
+  if (loading && !spendData) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="h-10 bg-slate-200 rounded-lg w-1/3"></div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-24 bg-slate-200 rounded-xl"></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="h-72 bg-slate-200 rounded-xl"></div>
+          <div className="h-72 bg-slate-200 rounded-xl"></div>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="space-y-8">
@@ -227,9 +252,6 @@ export const DashboardPage = () => {
         </div>
         <TrendLineChart periods={spendData?.periods || []} />
       </div>
-
-      {/* Module 8 Component: Transparent Agent Audit Activity Feed */}
-      <AuditFeed />
 
       {/* Category Comparison Table & Natural Language Summary */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

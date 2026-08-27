@@ -115,6 +115,20 @@ def test_prediction_llm_mock(client, db_session, sample_user):
             assert "Food spend is projected to rise" in data["explanation"]
 
 
+def test_ask_coinsy_endpoint(client, db_session, sample_user):
+    payload = {
+        "user_id": sample_user.id,
+        "message": "How can I reduce my dining out spend?",
+        "roast_mode": False
+    }
+    response = client.post("/api/v1/insights/ask", json=payload)
+    assert response.status_code == 200
+    data = response.json()
+    assert "reply" in data
+    assert "mascot_mood" in data
+    assert data["mascot_mood"] in ["happy", "thinking", "concerned", "celebrating"]
+
+
 def test_scheduler_lifecycle():
     scheduler_instance = InsightsScheduler(interval_seconds=3600)
     scheduler_instance.start()
@@ -122,3 +136,5 @@ def test_scheduler_lifecycle():
     assert scheduler_instance._thread.is_alive()
     scheduler_instance.stop()
     assert not scheduler_instance._thread.is_alive()
+
+

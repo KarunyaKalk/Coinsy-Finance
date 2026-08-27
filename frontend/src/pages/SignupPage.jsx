@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Wallet, AlertCircle, CheckCircle, XCircle, Sparkles } from 'lucide-react';
+import { Wallet, AlertCircle } from 'lucide-react';
 
 export const SignupPage = () => {
   const [fullName, setFullName] = useState('');
@@ -13,50 +13,17 @@ export const SignupPage = () => {
   const { signup } = useAuth();
   const navigate = useNavigate();
 
-  // Password constraint rules
-  const hasMinLength = password.length >= 8;
-  const hasUpper = /[A-Z]/.test(password);
-  const hasLower = /[a-z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-  const hasSpecial = /[!@#$%^&*(),.?":{}|<>_\-+=\[\]]/.test(password);
-
-  const isValidPassword = hasMinLength && hasUpper && hasLower && hasNumber && hasSpecial;
-  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-
-  const handleDemoAccess = () => {
-    const demoUser = {
-      id: 1,
-      email: email.trim() || 'karunya.kalk@gmail.com',
-      full_name: fullName.trim() || 'Karunya Kalkhundiya',
-    };
-    localStorage.setItem('coinsy_token', 'demo-token');
-    localStorage.setItem('coinsy_user', JSON.stringify(demoUser));
-    window.location.href = './#/dashboard';
-    window.location.reload();
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    if (!isValidEmail) {
-      setError('Please enter a valid email address (e.g. name@domain.com).');
-      return;
-    }
-
-    if (!isValidPassword) {
-      setError('Password does not meet all required security constraints.');
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      await signup(email.trim().toLowerCase(), password, fullName.trim());
+      await signup(email, password, fullName);
       navigate('/dashboard');
     } catch (err) {
-      console.warn('Backend server unavailable or network error. Entering demo mode:', err);
-      // Seamless demo fallback for static GitHub Pages host
-      handleDemoAccess();
+      console.error('Signup error:', err);
+      const msg = err.response?.data?.detail || 'Failed to create account. Please try again.';
+      setError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -90,7 +57,7 @@ export const SignupPage = () => {
               required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Karunya Kalkhundiya"
+              placeholder="Jane Doe"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
@@ -104,14 +71,9 @@ export const SignupPage = () => {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="karunya.kalk@gmail.com"
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
-                email && !isValidEmail ? 'border-rose-400 focus:ring-rose-400' : 'border-slate-300 focus:ring-indigo-500'
-              }`}
+              placeholder="you@example.com"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            {email && !isValidEmail && (
-              <p className="text-[11px] text-rose-600 mt-1">Must be a valid email (e.g. name@domain.com)</p>
-            )}
           </div>
 
           <div>
@@ -121,38 +83,12 @@ export const SignupPage = () => {
             <input
               type="password"
               required
+              minLength={6}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-
-            {/* Password Security Rules Checklist */}
-            <div className="mt-2.5 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
-              <div className="text-[11px] font-bold text-slate-700 mb-1">Password Requirements:</div>
-              <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                <span className={`flex items-center ${hasMinLength ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                  {hasMinLength ? <CheckCircle className="w-3 h-3 mr-1 text-emerald-600" /> : <XCircle className="w-3 h-3 mr-1 text-slate-400" />}
-                  Min 8 characters
-                </span>
-                <span className={`flex items-center ${hasUpper ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                  {hasUpper ? <CheckCircle className="w-3 h-3 mr-1 text-emerald-600" /> : <XCircle className="w-3 h-3 mr-1 text-slate-400" />}
-                  Uppercase (A-Z)
-                </span>
-                <span className={`flex items-center ${hasLower ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                  {hasLower ? <CheckCircle className="w-3 h-3 mr-1 text-emerald-600" /> : <XCircle className="w-3 h-3 mr-1 text-slate-400" />}
-                  Lowercase (a-z)
-                </span>
-                <span className={`flex items-center ${hasNumber ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                  {hasNumber ? <CheckCircle className="w-3 h-3 mr-1 text-emerald-600" /> : <XCircle className="w-3 h-3 mr-1 text-slate-400" />}
-                  Number (0-9)
-                </span>
-                <span className={`flex items-center col-span-2 ${hasSpecial ? 'text-emerald-700 font-semibold' : 'text-slate-500'}`}>
-                  {hasSpecial ? <CheckCircle className="w-3 h-3 mr-1 text-emerald-600" /> : <XCircle className="w-3 h-3 mr-1 text-slate-400" />}
-                  Special character (!@#$%^&*)
-                </span>
-              </div>
-            </div>
           </div>
 
           <button
@@ -164,22 +100,11 @@ export const SignupPage = () => {
           </button>
         </form>
 
-        <div className="pt-2 border-t border-slate-100 text-center space-y-3">
-          <button
-            type="button"
-            onClick={handleDemoAccess}
-            className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-2.5 rounded-lg text-xs shadow hover:opacity-95 transition-all"
-          >
-            <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>Explore App Instant Demo Mode</span>
-          </button>
-
-          <div className="text-sm text-slate-500">
-            Already have an account?{' '}
-            <Link to="/login" className="text-indigo-600 font-medium hover:underline">
-              Sign in
-            </Link>
-          </div>
+        <div className="text-center text-sm text-slate-500 pt-2">
+          Already have an account?{' '}
+          <Link to="/login" className="text-indigo-600 font-medium hover:underline">
+            Sign in
+          </Link>
         </div>
       </div>
     </div>

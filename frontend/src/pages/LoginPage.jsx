@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Wallet, AlertCircle, Sparkles } from 'lucide-react';
+import { Wallet, AlertCircle } from 'lucide-react';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -12,30 +12,17 @@ export const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleDemoAccess = () => {
-    const demoUser = {
-      id: 1,
-      email: email.trim() || 'karunya.kalk@gmail.com',
-      full_name: 'Karunya Kalkhundiya',
-    };
-    localStorage.setItem('coinsy_token', 'demo-token');
-    localStorage.setItem('coinsy_user', JSON.stringify(demoUser));
-    window.location.href = './#/dashboard';
-    window.location.reload();
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
     setIsSubmitting(true);
     try {
-      await login(email.trim().toLowerCase(), password);
+      await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      console.warn('Backend server unavailable or network error. Entering demo mode:', err);
-      // Seamless demo fallback for static GitHub Pages host
-      handleDemoAccess();
+      console.error('Login error:', err);
+      const msg = err.response?.data?.detail || 'Failed to login. Please check your credentials.';
+      setError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -97,22 +84,11 @@ export const LoginPage = () => {
           </button>
         </form>
 
-        <div className="pt-2 border-t border-slate-100 text-center space-y-3">
-          <button
-            type="button"
-            onClick={handleDemoAccess}
-            className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold py-2.5 rounded-lg text-xs shadow hover:opacity-95 transition-all"
-          >
-            <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>Explore App Instant Demo Mode</span>
-          </button>
-
-          <div className="text-sm text-slate-500">
-            Don't have an account yet?{' '}
-            <Link to="/signup" className="text-indigo-600 font-medium hover:underline">
-              Sign up
-            </Link>
-          </div>
+        <div className="text-center text-sm text-slate-500 pt-2">
+          Don't have an account yet?{' '}
+          <Link to="/signup" className="text-indigo-600 font-medium hover:underline">
+            Sign up
+          </Link>
         </div>
       </div>
     </div>

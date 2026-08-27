@@ -10,31 +10,33 @@ The project is structured as a monorepo with distinct backend and frontend servi
 
 ```
 Coinsy Finance/
-├── .github/
-│   └── workflows/            # GitHub Actions CI/CD deployment pipelines
 ├── backend/
-│   ├── alembic/              # Database migration scripts
 │   ├── app/
-│   │   ├── api/              # FastAPI routers (auth, analytics, audit, budgets, categories, insights, interview_prep, jobs, personality, settings, statements, transactions)
-│   │   ├── core/             # Application configuration, security, JWT auth, and background scheduler
+│   │   ├── api/              # FastAPI routers (auth, analytics, budgets, categories, insights, personality, statements, transactions)
+│   │   ├── core/             # Configuration, security, rate limiting, JWT auth, and background scheduler
 │   │   ├── db/               # SQLAlchemy models & database session engine
 │   │   ├── models/           # Pydantic request & response validation schemas
-│   │   ├── services/         # Business logic, CSV/PDF parsers, LLM categorizer, analytics, insights, interview prep, settings, and audit service
-│   │   └── main.py           # FastAPI application entrypoint with lifespan background job scheduler
-│   ├── tests/                # Pytest unit & integration test suites
-│   ├── requirements.txt      # Python dependencies
-│   └── alembic.ini
+│   │   ├── services/         # Business logic, CSV/PDF parsers, LLM categorizer, analytics, insights, and mascot companion service
+│   │   └── main.py           # FastAPI entrypoint with lifespan background job scheduler and health check
+│   ├── tests/                # Pytest unit, integration & end-to-end user flow test suites
+│   ├── Dockerfile            # Production multi-stage Docker container build
+│   ├── render.yaml           # Infrastructure-as-code blueprint for Docker + Managed PostgreSQL
+│   └── requirements.txt      # Python dependencies (FastAPI, SQLAlchemy, psycopg2-binary, Pandas, Anthropic)
 ├── frontend/
 │   ├── src/
-│   │   ├── api/              # Axios API client layer with Bearer token interceptors
-│   │   ├── components/       # UI components, layout, guarded routes, Recharts charts, heatmap, AuditFeed, PrepPackChecklist, and Coinsy widget
+│   │   ├── api/              # Centralized Axios API client layer with Bearer token interceptors
+│   │   ├── components/       # UI components, layout, guarded routes, Recharts charts, heatmap, and Coinsy widget
 │   │   ├── context/          # React AuthContext for JWT state management
-│   │   ├── pages/            # Application views (LoginPage, SignupPage, DashboardPage, BudgetsPage, JobTrackerPage, ImportPage, SettingsPage)
+│   │   ├── pages/            # Application views (LoginPage, SignupPage, DashboardPage, BudgetsPage, ImportPage, SettingsPage)
 │   │   ├── App.jsx           # Main React App with React Router routing
 │   │   └── index.css         # Tailwind base styles and directives
-│   ├── tailwind.config.js
+│   ├── vercel.json           # Vercel SPA routing rewrite rules
+│   ├── netlify.toml          # Netlify build and redirect configuration
 │   ├── package.json
 │   └── vite.config.js
+├── .env.example              # Environment variables template
+├── DEPLOYMENT.md             # Production deployment and infrastructure guide
+├── ROADMAP.md                # System completion status and future phase roadmap
 └── README.md
 ```
 
@@ -42,75 +44,64 @@ Coinsy Finance/
 
 ## Core Capabilities
 
-### 1. Multi-Format Statement Import
-- **CSV Import**: Parses statement formats with flexible header mappings across major Indian bank and UPI formats (HDFC, ICICI, SBI, PhonePe, Paytm).
-- **PDF Import**: Table extraction via `pdfplumber` with fallback to LLM-assisted raw text extraction when table grids are unformatted.
-- **Password-Protected PDFs**: Detects encrypted PDFs and supports password decryption during upload.
-- **Account Masking**: Redacts 10-18 digit account numbers and 16-digit card numbers prior to storage.
-- **Smart Deduplication**: Prevents duplicate transaction records within matching date ranges.
+### 1. Multi-Format Statement Import & Account Masking
+- **CSV & PDF Import**: Parses statement formats across major Indian bank and UPI formats (HDFC, ICICI, SBI, PhonePe, Paytm) with table extraction via `pdfplumber`.
+- **Password Protection**: Supports password-encrypted PDFs with interactive password prompt handling.
+- **Account Number Redaction**: Automatically masks 10-18 digit account numbers and 16-digit card numbers prior to storage and prior to sending text to LLM prompts.
+- **Data Privacy Consent**: Includes a first-import consent screen detailing statement processing policies, local parsing, and account redaction.
 
 ### 2. LLM Auto-Categorization & Few-Shot Learning
 - **Batched Processing**: Groups transactions into batched prompts for the Anthropic Claude API to minimize token usage and latency.
 - **Fixed Category Taxonomy**: Categorizes transactions into 9 default categories: Food, Transport, Rent, Utilities, Shopping, Entertainment, Subscriptions, Investments, and Other.
-- **User Preference Learning**: Stores explicit category corrections made by users and includes recent corrections as few-shot prompt examples.
+- **User Preference Learning**: Remembers explicit category corrections made by users and includes recent corrections as few-shot prompt examples.
 - **Heuristic Fallback**: Includes a rule-based categorization fallback when an API key is omitted or an external API call fails.
 
 ### 3. Pandas Spend Analytics & Period Comparisons
 - **Timeframe Aggregations**: Grouping and resample calculations for weekly (ISO week format), monthly, and yearly spend by category using Pandas.
-- **Month-over-Month & Week-over-Week Comparisons**: Category-level and total spend comparison metrics, computing change amounts, percentage changes, and trend directions (increased, decreased, unchanged, new).
-- **Natural Language Period Summaries**: LLM-generated executive summaries of notable spend shifts across periods, with rule-based fallback generation.
+- **Month-over-Month & Week-over-Week Comparisons**: Category-level and total spend comparison metrics, computing change amounts, percentage changes, and trend directions.
+- **Natural Language Period Summaries**: LLM-generated executive summaries of notable spend shifts across periods.
 
-### 4. Trend Predictions & Background Batch Scheduler
+### 4. Trend Predictions & Asynchronous Scheduler
 - **Spend Forecasting**: Linear trend regression models fitted over 3 to 6 months of historical spend to forecast next month's spend per category.
 - **One-Line LLM Explanation**: Concise natural language driver explanations accompanying predictions.
-- **Asynchronous Scheduler**: Asynchronous background thread scheduler that pre-computes predictions and tips off the main HTTP request loop and persists insights to the database for instant response delivery.
+- **Background Job Scheduler**: Asynchronous background thread scheduler that pre-computes predictions and tips off the main HTTP thread and persists insights for instant response delivery.
 
 ### 5. Monthly Budget Goals & Threshold Alerts
 - **Category Caps**: User-defined monthly spending limits per category.
-- **Threshold Evaluation**: Real-time progress tracking evaluating 80% near-limit warning thresholds and 100% over-budget exceeded thresholds.
+- **Real-Time Threshold Evaluation**: Progress tracking evaluating 80% near-limit warning thresholds and 100% over-budget exceeded thresholds.
 - **Stored Notification Triggers**: Automatic generation of stored notification records (`CoinsyMessage`) with mascot mood reactions (`concerned`, `happy`, `celebrating`).
 
-### 6. Interactive Visualizations & Analytics
+### 6. Interactive Visualizations & Heatmaps
 - **Recharts Components**: Donut charts for category distribution, grouped bar charts for period comparisons, and line charts for historical spend trends.
-- **Timeframe View Toggles**: Header control switching queries dynamically between Weekly, Monthly, and Yearly aggregation views.
 - **Daily Spend Intensity Heatmap**: 90-day calendar intensity grid displaying daily spend levels from 0 to 4 with interactive tooltips.
 - **Cash Flow Analytics**: Multi-period Income vs. Expense vs. Net Savings charts and average savings rate calculation.
 
-### 7. Personality Layer & Spotify-Wrapped Style Recap
+### 7. Interactive Coinsy Mascot Companion Widget
+- **Six Mascot Mood States**: Animated SVG expressions for `idle`, `thinking`, `happy`, `concerned`, `sleepy`, and `celebrating`.
+- **Interactive Animations**: Idle breathing, periodic blinking, mouse-tracking pupil movement, click-to-wiggle interaction, and welcome-back entry bounce animation.
+- **Ask Coinsy Companion Chat**: Interactive chat panel wired to LLM companion endpoint (`POST /api/v1/insights/ask`) responding with financial advice and mascot mood reactions.
+- **Onboarding Walkthrough**: Step-by-step introduction sequence guiding users through statement import and budget setup.
+- **Reduce Coinsy Setting**: Toggle switch in settings to disable proactive speech bubble popups while keeping click-to-ask companion chat active.
+
+### 8. Personality Layer & Spotify-Wrapped Style Recap
 - **Budget Streak Counter**: Tracks consecutive days spent within daily budget allowances.
 - **Money Mood Engine**: Calculates financial mood (Thriving, Calm, or Stressed) derived from budget status and savings rate.
 - **Roast Mode Toggle**: User setting that transforms LLM tip generation into witty, lighthearted financial roasts based on actual spending habits.
 - **Shareable Monthly Money Recap**: Month-end Spotify-Wrapped style recap card featuring spending personas (such as The Foodie Adventurer, The Trendsetter, or The Wealth Architect), top merchant metrics, biggest single purchase, and financial recap stories.
 
-### 8. Interview Prep Pack Generator & Job Application Tracker
-- **Job Tracker**: Track job applications with statuses (Applied, Interview, Offered, Rejected).
-- **Automated Prep Pack Action**: Action trigger enabled on any job marked with Interview status.
-- **Claude AI Prep Pack Generation**: Generates technical and behavioral questions based on Job Description (JD) and candidate resume overlap and gaps, company background context, and STAR-format draft answers mapped to actual resume bullets.
-- **Checkable Prep Pack UI**: Interactive prep checklist with category filters (Technical, Behavioral, STAR Answers, Company Notes), progress bars, and editable custom notes fields per item.
-
-### 9. Central Settings, Audit Log & Graceful Failure Handling
-- **Central Settings UI**: Configuration controls for scan frequency (1 hour to 24 hours), ATS score match threshold slider, daily application cap, and daily cold-email cap.
-- **Platform Management**: Active and inactive toggles with credentials management for platforms (LinkedIn, Indeed, Glassdoor, Wellfound, ZipRecruiter).
-- **Notification Webhooks**: Configurable Telegram bot webhook URL and alert email notification address.
-- **Filterable Audit Log Activity Feed**: Transparent activity trail logging all scrape runs, resume generations, ATS score evaluations, application submissions, cold emails, and block events.
-- **Graceful CAPTCHA and Block Failure Handling**: Automatic halting of automation upon hitting CAPTCHAs or platform blocks without aggressive retries, generating in-app mascot notifications and webhook alert dispatches.
-
-### 10. Authentication Constraints & Security Rules
-- **Email Validation**: Enforces standard format validation, trimming, and lowercase normalization.
-- **Password Strength Rules**: Enforces password requirements (minimum 8 characters, at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character).
-- **Interactive UI Feedback**: Real-time password requirement checklist displaying security criteria on the authentication forms.
-
-### 11. Instant Demo Mode & Automated CI/CD Deployment
-- **GitHub Actions Pipeline**: Automated deployment workflow compiling the Vite React application and deploying static build artifacts to GitHub Pages.
-- **Offline Demo Mode**: Integrated instant demo access allowing users to explore the live interactive dashboard and feature components directly on static web hosts.
+### 9. Production Readiness & Security
+- **LLM Endpoint Rate Limiting**: In-memory rate limiter protecting LLM-calling endpoints against API quota drain (maximum 30 requests per minute).
+- **Health & Monitoring**: Enhanced `GET /api/v1/health` endpoint monitoring database connectivity and background scheduler execution state.
+- **Containerized Deployment**: Docker containerization with PostgreSQL database support, CORS whitelist configuration, and SPA routing manifests (`vercel.json`, `netlify.toml`, `render.yaml`).
 
 ---
 
 ## Technology Stack
 
-- **Backend**: Python 3.9+, FastAPI, SQLAlchemy 2.0, Alembic, SQLite, Pandas, PyJWT, bcrypt, pdfplumber, Anthropic Python SDK, Pytest
+- **Backend**: Python 3.9+, FastAPI, SQLAlchemy 2.0, Alembic, PostgreSQL / SQLite, Pandas, PyJWT, bcrypt, pdfplumber, Anthropic Python SDK, Pytest, Docker
 - **Frontend**: React 18, Vite, Tailwind CSS v4, Recharts, Axios, React Router v6, Lucide React
-- **Deployment & CI/CD**: GitHub Actions, GitHub Pages
+- **Authentication**: JWT Bearer Token Authentication
+- **Deployment**: Railway / Render (Backend + PostgreSQL), Vercel / Netlify (Frontend)
 
 ---
 
@@ -154,7 +145,7 @@ Coinsy Finance/
 
 Run the Pytest suite from the `backend` directory:
 ```bash
-PYTHONPATH=. pytest tests
+PYTHONPATH=. pytest
 ```
 
 ### Frontend Setup
@@ -179,6 +170,13 @@ PYTHONPATH=. pytest tests
    ```bash
    npm run build
    ```
+
+---
+
+## Deployment & Future Roadmap
+
+- Refer to [`DEPLOYMENT.md`](file:///Users/karunya/Coinsy%20Finance/DEPLOYMENT.md) for production hosting guides on Railway, Render, Vercel, and Netlify.
+- Refer to [`ROADMAP.md`](file:///Users/karunya/Coinsy%20Finance/ROADMAP.md) for out-of-scope future product phases (Account Aggregator live sync, investment portfolio tracking, social bill-splitting, native mobile app).
 
 ---
 

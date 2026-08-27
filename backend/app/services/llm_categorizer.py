@@ -3,6 +3,7 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 import anthropic
 from app.core.config import settings
+from app.services.pdf_parser.masking import mask_account_numbers
 
 logger = logging.getLogger(__name__)
 
@@ -43,34 +44,51 @@ DEFAULT_CATEGORY_COLORS = {
 }
 
 def fallback_rule_categorizer(description: str, merchant_name: Optional[str] = None) -> Tuple[str, float]:
-    desc = (description or "").lower()
-    merch = (merchant_name or "").lower()
-    text = f"{desc} {merch}"
-    
-    rules = [
-        ("Food", ["swiggy", "zomato", "mcdonald", "starbucks", "food", "restaurant", "dining", "cafe", "grocer", "blinkit", "zepto", "supermarket"]),
-        ("Transport", ["uber", "ola", "fuel", "petrol", "cab", "metro", "train", "toll", "rapido"]),
-        ("Rent", ["rent", "landlord", "house rent"]),
-        ("Utilities", ["electricity", "water", "gas", "bill", "recharge", "mobile", "wifi", "broadband", "bescom"]),
-        ("Shopping", ["amazon", "flipkart", "myntra", "retail", "store", "cloth", "fashion", "mall"]),
-        ("Entertainment", ["cinema", "movie", "pvr", "bookmyshow", "game", "steam", "playstation"]),
-        ("Subscriptions", ["netflix", "spotify", "prime", "youtube", "apple", "disney", "hotstar"]),
-        ("Investments", ["zerodha", "groww", "mf", "mutual fund", "stock", "sip", "nps", "coin"])
-    ]
-    
-    for category, keywords in rules:
-        if any(kw in text for kw in keywords):
-            return category, 0.85
-            
+    """
+    Rule-based heuristic categorizer when ANTHROPIC_API_KEY is not available.
+    """
+    desc_clean = mask_account_numbers(description or "").lower()
+    merchant_clean = mask_account_numbers(merchant_name or "").lower()
+    combined = f"{desc_clean} {merchant_clean}"
+
+    if any(k in combined for k in ["swiggy", "zomato", "uber eats", "restaurant", "cafe", "food", "dining", "dosa", "pizza", "starbucks", "mcdonald"]):
+        return "Food", 0.95
+    if any(k in combined for k in ["uber", "ola", "rapido", "metro", "fuel", "petrol", "shell", "hpcl", "bpcl", "flight", "irctc", "transit"]):
+        return "Transport", 0.95
+    if any(k in combined for k in ["rent", "landlord", "pg ", "housing", "society", "maintenance"]):
+        return "Rent", 0.90
+    if any(k in combined for k in ["eb ", "electricity", "water", "bescom", "tata power", "gas", "wifi", "broadband", "recharge", "airtel", "jio"]):
+        return "Utilities", 0.90
+    if any(k in combined for k in ["amazon", "flipkart", "myntra", "zara", "h&m", "retail", "mall", "shopping", "store"]):
+        return "Shopping", 0.85
+    if any(k in combined for k in ["movie", "bookmyshow", "pvr", "inox", "pub", "game", "steam", "bowling"]):
+        return "Entertainment", 0.85
+    if any(k in combined for k in ["netflix", "spotify", "prime", "hotstar", "youtube", "apple.com", "icloud", "chatgpt"]):
+        return "Subscriptions", 0.95
+    if any(k in combined for k in ["zerodha", "groww", "upstox", "sip", "mutual fund", "indmoney", "coin", "nps"]):
+        return "Investments", 0.95
+
     return "Other", 0.50
+
+def categorize_transactions_llm(
+    transactions: List[Dict[str, Any]],
+    recent_corrections: Optional[List[Dict[str, Any]]] = None
+) -> List[Dict[str, Any]]:
+    """
+    Batched transaction categorization using Anthropic Claude API with few-shot user corrections.
+    Enforces account number masking prior to constructing LLM prompts.
+    """
+    return categorize_transactions_batch(transactions, recent_corrections)
+
 
 def categorize_transactions_batch(
     transactions: List[Dict[str, Any]],
-    recent_corrections: Optional[List[Dict[str, str]]] = None
+    recent_corrections: Optional[List[Dict[str, Any]]] = None
 ) -> List[Dict[str, Any]]:
+
     """
-    Categorizes a batch of transactions using Claude API with few-shot user corrections,
-    falling back to heuristic rules if LLM key is absent or call fails.
+    Batched transaction categorization using Anthropic Claude API with few-shot user corrections.
+    Enforces account number masking prior to constructing LLM prompts.
     """
     if not transactions:
         return []
@@ -93,13 +111,15 @@ def categorize_transactions_batch(
     if recent_corrections:
         corrections_prompt = "User Specific Preferences / Recent Category Corrections (Use as Few-Shot Examples):\n"
         for corr in recent_corrections[:5]:
-            corrections_prompt += f"- Text: '{corr.get('description')}' (Merchant: '{corr.get('merchant_name', 'N/A')}') -> Category: '{corr.get('category')}'\n"
+            m_desc = mask_account_numbers(corr.get('description', ''))
+            m_merch = mask_account_numbers(corr.get('merchant_name', 'N/A'))
+            corrections_prompt += f"- Text: '{m_desc}' (Merchant: '{m_merch}') -> Category: '{corr.get('category')}'\n"
 
     items_to_categorize = [
         {
             "id": tx["id"],
-            "description": tx.get("description", ""),
-            "merchant": tx.get("merchant_name", "")
+            "description": mask_account_numbers(tx.get("description", "")),
+            "merchant": mask_account_numbers(tx.get("merchant_name", ""))
         }
         for tx in transactions
     ]

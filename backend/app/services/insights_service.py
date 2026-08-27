@@ -8,13 +8,122 @@ from sqlalchemy.orm import Session
 
 import anthropic
 from app.core.config import settings
-from app.db.models import Transaction, Category, User, Insight
+from app.db.models import Transaction, Category, User, Insight, CoinsyMessage
 from app.models.schemas import (
     CategoryPrediction,
     PredictionResponse,
     DailyTipResponse,
     BatchJobResponse,
+    AskCoinsyRequest,
+    AskCoinsyResponse,
 )
+
+
+def ask_coinsy_companion(
+    db: Session,
+    user_id: int,
+    user_message: str,
+    roast_mode: bool = False
+) -> AskCoinsyResponse:
+    """
+    Companion-style LLM chat endpoint for Ask Coinsy feature.
+    Prompts Claude LLM with mascot persona and financial context.
+    Stores exchange in CoinsyMessage table.
+    """
+    # Record user message in DB
+    user_msg_db = CoinsyMessage(
+        user_id=user_id,
+        role="user",
+        message=user_message,
+        mascot_mood="idle",
+        created_at=datetime.utcnow()
+    )
+    db.add(user_msg_db)
+    db.commit()
+
+    # Get recent spend context
+    cutoff = date.today() - timedelta(days=30)
+    tx_count = db.query(Transaction).filter(Transaction.user_id == user_id, Transaction.date >= cutoff).count()
+
+    is_llm = False
+    if settings.ANTHROPIC_API_KEY and settings.ANTHROPIC_API_KEY.strip() != "":
+        try:
+            client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+            tone_instructions = (
+                "Respond in a witty, lighthearted, funny sarcastic roast tone!"
+                if roast_mode
+                else "Respond in a warm, encouraging, intelligent, friendly personal finance mascot tone."
+            )
+            system_prompt = (
+                f"You are Coinsy, an interactive personal finance AI companion mascot.\n"
+                f"User Financial Context: Recorded {tx_count} transactions in the last 30 days.\n"
+                f"Instructions: {tone_instructions}\n"
+                f"Keep your response concise (2-3 sentences max).\n"
+                f"Return ONLY a valid JSON object with keys:\n"
+                f"- 'reply': (string) your response message to the user\n"
+                f"- 'mascot_mood': (string) exactly ONE of ['happy', 'thinking', 'concerned', 'celebrating']"
+            )
+            user_prompt = f"User asks Coinsy: '{user_message}'\n\nJSON Output:"
+
+            response = client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=250,
+                temperature=0.4 if not roast_mode else 0.7,
+                system=system_prompt,
+                messages=[{"role": "user", "content": user_prompt}]
+            )
+
+            content_text = response.content[0].text.strip()
+            if content_text.startswith("```"):
+                content_text = content_text.split("```")[1]
+                if content_text.startswith("json"):
+                    content_text = content_text[4:]
+            content_text = content_text.strip()
+
+            parsed = json.loads(content_text)
+            reply = parsed.get("reply", "I'm Coinsy! Keep tracking your spending and budgeting!")
+            mood = parsed.get("mascot_mood", "happy")
+            if mood not in ["happy", "thinking", "concerned", "celebrating"]:
+                mood = "happy"
+            is_llm = True
+        except Exception as e:
+            logger.error(f"Error in ask_coinsy_companion LLM call: {e}")
+            reply = f"I'm Coinsy, your AI finance companion! You have {tx_count} transactions recorded in the last 30 days. Ask me about your budgets or spending trends!"
+            mood = "happy"
+    else:
+        # Fallback response
+        msg_lower = user_message.lower()
+        if "budget" in msg_lower or "limit" in msg_lower:
+            reply = "You can set monthly budget limits per category on the Budgets page! I'll warn you if you hit 80% or 100% of your cap."
+            mood = "happy"
+        elif "save" in msg_lower or "saving" in msg_lower:
+            reply = "Saving consistently is a superpower! Check out your Cash Flow chart to track your savings rate over time."
+            mood = "celebrating"
+        elif "spend" in msg_lower or "cost" in msg_lower:
+            reply = f"You logged {tx_count} transactions in the past 30 days. Explore the Dashboard charts for your full category breakdown!"
+            mood = "thinking"
+        else:
+            reply = f"I'm Coinsy! I'm tracking your financial progress across {tx_count} transactions. Ask me anything about your budgets, savings, or spending trends!"
+            mood = "happy"
+
+    # Record Coinsy reply in DB
+    coinsy_msg_db = CoinsyMessage(
+        user_id=user_id,
+        role="coinsy",
+        message=reply,
+        mascot_mood=mood,
+        created_at=datetime.utcnow()
+    )
+    db.add(coinsy_msg_db)
+    db.commit()
+
+    return AskCoinsyResponse(
+        reply=reply,
+        mascot_mood=mood,
+        is_llm_generated=is_llm,
+        created_at=datetime.utcnow()
+    )
+
 
 logger = logging.getLogger(__name__)
 
